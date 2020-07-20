@@ -21,6 +21,6 @@ func main() {
 	r.HandleFunc("/posts", getPosts).Methods(http.MethodGet)
 	r.HandleFunc("/posts", addPost).Methods(http.MethodPost)
 
-	fmt.Printf("Listening on port %s", port)
+	fmt.Printf("Listening on port %s\n", port)
 	http.ListenAndServe(port, r)
 }

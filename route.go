@@ -2,60 +2,50 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"math/rand"
 	"net/http"
-)
 
-type Post struct {
-	Id    int    `json:"id"`
-	Title string `json:"title"`
-	Text  string `json:"text"`
-}
+	"github.com/baldore/pragmatic-reviews-golang/entity"
+	"github.com/baldore/pragmatic-reviews-golang/repository"
+)
 
 var (
-	posts []Post
+	repo repository.PostRepository = repository.NewPostRepository()
 )
-
-func init() {
-	posts = []Post{
-		{
-			Id:    1,
-			Title: "Common form mistakes",
-			Text:  "Stop messing around with forms",
-		}, {
-			Id:    2,
-			Title: "Doing a sudoku with Typescript",
-			Text:  "This is great",
-		},
-	}
-}
 
 func getPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
-	err := json.NewEncoder(w).Encode(posts)
+
+	posts, err := repo.FindAll()
 	if err != nil {
-		http.Error(w, "Error marshalling json", http.StatusInternalServerError)
+		http.Error(w, "Error getting posts", http.StatusInternalServerError)
 		return
+	}
+
+	if err = json.NewEncoder(w).Encode(posts); err != nil {
+		http.Error(w, "Error encoding posts", http.StatusInternalServerError)
 	}
 }
 
 func addPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
-	var post Post
+	var post entity.Post
 	err := json.NewDecoder(r.Body).Decode(&post)
 	if err != nil {
 		http.Error(w, "Error marshalling json", http.StatusInternalServerError)
 		return
 	}
 
-	lp := posts[len(posts)-1]
-	post.Id = lp.Id + 1
-	posts = append(posts, post)
+	post.ID = rand.Int63()
+	_, err = repo.Save(&post)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error saving post: %v", err), http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(post)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error marshalling json"))
-	}
+	json.NewEncoder(w).Encode(post)
 }
