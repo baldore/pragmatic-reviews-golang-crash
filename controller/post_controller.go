@@ -1,23 +1,33 @@
-package main
+package controller
 
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 
 	"github.com/baldore/pragmatic-reviews-golang/entity"
-	"github.com/baldore/pragmatic-reviews-golang/repository"
+	"github.com/baldore/pragmatic-reviews-golang/service"
 )
 
-var (
-	repo repository.PostRepository = repository.NewPostRepository()
-)
+type PostController interface {
+	GetPosts(w http.ResponseWriter, r *http.Request)
+	AddPost(w http.ResponseWriter, r *http.Request)
+}
 
-func getPosts(w http.ResponseWriter, r *http.Request) {
+type controller struct {
+	postService service.PostService
+}
+
+func NewPostController(ps service.PostService) PostController {
+	return &controller{
+		postService: ps,
+	}
+}
+
+func (c *controller) GetPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
-	posts, err := repo.FindAll()
+	posts, err := c.postService.FindAll()
 	if err != nil {
 		http.Error(w, "Error getting posts", http.StatusInternalServerError)
 		return
@@ -28,7 +38,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func addPost(w http.ResponseWriter, r *http.Request) {
+func (c *controller) AddPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
 	var post entity.Post
@@ -38,9 +48,7 @@ func addPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post.ID = rand.Int63()
-	_, err = repo.Save(&post)
-
+	err = c.postService.AddPost(&post)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error saving post: %v", err), http.StatusInternalServerError)
 		return

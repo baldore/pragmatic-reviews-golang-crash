@@ -4,9 +4,13 @@ import (
 	"context"
 	"log"
 
-	"cloud.google.com/go/firestore"
 	"github.com/baldore/pragmatic-reviews-golang/entity"
+	"github.com/baldore/pragmatic-reviews-golang/storage"
 	"google.golang.org/api/iterator"
+)
+
+const (
+	collectionName string = "posts"
 )
 
 type PostRepository interface {
@@ -20,14 +24,9 @@ func NewPostRepository() PostRepository {
 	return &repo{}
 }
 
-const (
-	projectId      string = "pragmatic-reviews-8060a"
-	collectionName string = "posts"
-)
-
 func (r *repo) Save(post *entity.Post) (*entity.Post, error) {
 	ctx := context.Background()
-	client, err := firestore.NewClient(ctx, projectId)
+	client, err := storage.GetDBClient(ctx)
 	if err != nil {
 		log.Fatalf("Failed to create a Firestore Client: %v", err)
 		return nil, err
@@ -50,7 +49,7 @@ func (r *repo) Save(post *entity.Post) (*entity.Post, error) {
 
 func (r *repo) FindAll() ([]entity.Post, error) {
 	ctx := context.Background()
-	client, err := firestore.NewClient(ctx, projectId)
+	client, err := storage.GetDBClient(ctx)
 	if err != nil {
 		log.Fatalf("Failed to create a Firestore Client: %v", err)
 		return nil, err
