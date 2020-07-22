@@ -2,28 +2,32 @@ package main
 
 import (
 	"fmt"
-	"net/http"
+	"log"
 
 	"github.com/baldore/pragmatic-reviews-golang/controller"
 	"github.com/baldore/pragmatic-reviews-golang/repository"
+	"github.com/baldore/pragmatic-reviews-golang/router"
 	"github.com/baldore/pragmatic-reviews-golang/service"
-	"github.com/gorilla/mux"
+)
+
+const (
+	port string = ":9090"
 )
 
 var (
-	port string = ":9090"
-
+	r              router.Router             = router.NewGorillaMuxRouter()
 	posts          repository.PostRepository = repository.NewPostRepository()
 	postService    service.PostService       = service.NewPostService(posts)
 	postController controller.PostController = controller.NewPostController(postService)
 )
 
 func main() {
-	r := mux.NewRouter()
-
-	r.HandleFunc("/posts", postController.GetPosts).Methods(http.MethodGet)
-	r.HandleFunc("/posts", postController.AddPost).Methods(http.MethodPost)
+	r.Get("/posts", postController.GetPosts)
+	r.Post("/posts", postController.AddPost)
 
 	fmt.Printf("Listening on port %s\n", port)
-	http.ListenAndServe(port, r)
+	err := r.ListenAndServe(port)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
